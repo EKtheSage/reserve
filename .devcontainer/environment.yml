@@ -1,0 +1,21 @@
+name: reserve
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy
+  - pandas
+  - matplotlib
+  - arviz
+  - cmdstan
+  - cmdstanpy[all]
+  - jupyterlab
+  - r-base
+  - r-data.table
+  - r-cmdstanr
+  - r-bayesplot
+  - r-brms
+  - r-shinystan
+  - r-essentials
+  - r-languageserver
+  - radian
