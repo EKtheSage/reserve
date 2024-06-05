@@ -18,4 +18,5 @@ dependencies:
   - r-shinystan
   - r-essentials
   - r-languageserver
+  - r-httpgd
   - radian
