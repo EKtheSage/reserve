@@ -26,6 +26,7 @@
 			"settings": {
 				"python.defaultInterpreterPath": "/opt/conda/envs/reserve",
 				"r.rterm.linux": "/opt/conda/envs/reserve/bin/radian",
+				"r.rpath.linux": "/opt/conda/envs/reserve/bin/R",
 				"r.bracketedPaste": true,
 				"r.plot.useHttpgd": true,
 				"r.rterm.option": [
