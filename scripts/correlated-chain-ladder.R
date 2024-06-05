@@ -15,7 +15,7 @@ theme_set(
     theme(text = element_text(family = 'nunito'))
 )
 
-cas_data <- fread('https://www.casact.org/sites/default/files/2021-04/comauto_pos.csv')
+cas_data <- fread('https://www.casact.org/sites/default/files/2021-04/comauto_pos.csv') # nolint: quotes_linter.
 
 setnames(
   cas_data,
@@ -28,7 +28,7 @@ setnames(
 create_loss_data <- function(cas_data, company_code, loss_type= 'incurred'){
 
   comp_data <- cas_data[
-    GRCODE==company_code,
+    GRCODE==company_code,  # nolint: object_usage_linter.
     c('premium', 'accident_year', 'dev', 'incurred_loss', 'paid_loss', 'bulk_loss')
   ]
 
@@ -38,10 +38,9 @@ create_loss_data <- function(cas_data, company_code, loss_type= 'incurred'){
     origin1id = ifelse(accident_year == min(accident_year), 0,  1))]
 
   # set losses < 0 to 1, as we will take the log later
-  if(loss_type %in% "incurred"){
+  if (loss_type %in% "incurred"){
     comp_data[, loss := pmax(incurred_loss - bulk_loss, 1)]
-  }
-  else{
+  } else {
     comp_data[, loss := pmax(paid_loss, 1)]
   }
   # add calendar period and sort data by dev and then origin
@@ -51,7 +50,7 @@ create_loss_data <- function(cas_data, company_code, loss_type= 'incurred'){
   comp_data[, `:=`(
     loss_train = ifelse(cal <= max(origin), loss, NA),
     loss_test = ifelse(cal > max(origin), loss, NA))]
-  
+
   train_test <- rbindlist(
     list(
       comp_data[cal <= max(origin)],
