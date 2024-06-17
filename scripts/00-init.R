@@ -16,10 +16,10 @@ theme_set(
     theme(text = element_text(family = 'nunito'))
 )
 
-create_loss_data <- function(cas_data, company_code, loss_type= 'incurred'){
+create_loss_data <- function(cas_data, company_code, loss_type = 'incurred') {
 
   comp_data <- cas_data[
-    GRCODE==company_code,  # nolint: object_usage_linter.
+    GRCODE == company_code,  # nolint: object_usage_linter.
     c('premium', 'accident_year', 'dev', 'incurred_loss', 'paid_loss', 'bulk_loss')
   ]
 
@@ -29,7 +29,7 @@ create_loss_data <- function(cas_data, company_code, loss_type= 'incurred'){
     origin1id = ifelse(accident_year == min(accident_year), 0,  1))]
 
   # set losses < 0 to 1, as we will take the log later
-  if (loss_type %in% "incurred"){
+  if (loss_type %in% "incurred") {
     comp_data[, loss := pmax(incurred_loss - bulk_loss, 1)]
   } else {
     comp_data[, loss := pmax(paid_loss, 1)]
