@@ -10,15 +10,16 @@ dependencies:
   - cmdstan
   - cmdstanpy[all]
   - jupyterlab
+  - radian
   - r-base
-  - r-data.table
-  - r-cmdstanr
-  - r-bayesplot
-  - r-brms
-  - r-shinystan
   - r-essentials
   - r-languageserver
   - r-httpgd
-  - r-showtext
-  - r-showtextdb
-  - radian
+  - r-renv
+  # - r-data.table
+  # - r-cmdstanr
+  # - r-bayesplot
+  # - r-brms
+  # - r-shinystan
+  # - r-showtext
+  # - r-showtextdb
