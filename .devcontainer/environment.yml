@@ -13,9 +13,9 @@ dependencies:
   - radian
   - r-base
   - r-essentials
-  - r-languageserver
-  - r-httpgd
   - r-renv
+  # - r-languageserver
+  # - r-httpgd
   # - r-data.table
   # - r-cmdstanr
   # - r-bayesplot
@@ -23,3 +23,4 @@ dependencies:
   # - r-shinystan
   # - r-showtext
   # - r-showtextdb
+
