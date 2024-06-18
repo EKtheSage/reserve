@@ -1,8 +1,8 @@
 data {
   int<lower=1> len_data;
   int<lower=1> len_pred;
-  array[len_data + len_pred] real logprem;
-  array[len_data] real logloss;
+  array[len_data + len_pred] real prem;
+  array[len_data] real loss;
   array[len_data + len_pred] int<lower=1> origin;
   array[len_data + len_pred] int<lower=1> dev;
 }
@@ -17,7 +17,7 @@ parameters {
   real log_elr;
   array[n_dev] real<lower=0, upper=100000> a_ig;
   real gamma;
-  array[len_pred] real logloss_pred;
+  array[len_pred] real loss_pred;
 }
 transformed parameters {
   array[n_origin] real alpha;
@@ -50,11 +50,11 @@ transformed parameters {
     sig[i] = sqrt(sig2[i]);
   }
   for (i in 1:len_data) {
-    mu[i] = logprem[i] + log_elr + alpha[origin[i]] + 
+    mu[i] = prem[i] + log_elr + alpha[origin[i]] + 
       beta[dev[i]] * speedup[origin[i]];
   }
   for (i in 1:len_pred) {
-    mu_pred[i] = logprem[len_data + i] + log_elr + 
+    mu_pred[i] = prem[len_data + i] + log_elr + 
       alpha[origin[len_data + i]] + 
       beta[dev[len_data + i]] * speedup[origin[len_data + i]];
   }
@@ -67,10 +67,10 @@ model {
   gamma ~ normal(0, 0.05);
 
   for (i in 1:(len_data)) {
-    logloss[i] ~ normal(mu[i], sig[dev[i]]);
+    loss[i] ~ normal(mu[i], sig[dev[i]]);
   }
   for (i in 1:(len_pred)) {
-    logloss_pred[i] ~ normal(mu_pred[i], sig[dev[len_data + i]]);
+    loss_pred[i] ~ normal(mu_pred[i], sig[dev[len_data + i]]);
   }
 }
 generated quantities {
@@ -78,7 +78,7 @@ generated quantities {
   vector[len_total] ppc_loss;
 
   for (i in 1:len_data) {
-    log_lik[i] = normal_lpdf(logloss[i] | mu[i], sig[dev[i]]);
+    log_lik[i] = normal_lpdf(loss[i] | mu[i], sig[dev[i]]);
   }
 
   for (i in 1:len_data) {

@@ -51,12 +51,20 @@ create_loss_data <- function(cas_data, company_code, loss_type = 'incurred') {
   return(train_test)
 }
 
-create_stan_data <- function(loss_data) {
+create_stan_data <- function(loss_data, log_amt = TRUE) {
+  if (log_amt) {
+    prem <- log(loss_data[, premium])
+    loss <- log(loss_data[!is.na(loss_train), loss_train])
+  } else {
+    prem <- loss_data[, premium]
+    loss <- loss_data[!is.na(loss_train), loss_train]
+  }
+
   list(
     len_data = loss_data[!is.na(loss_train), .N],
     len_pred = loss_data[is.na(loss_train), .N],
-    logprem = log(loss_data[, premium]),
-    logloss = log(loss_data[!is.na(loss_train), loss_train]),
+    prem = prem,
+    loss = loss,
     origin = loss_data[, origin],
     dev = loss_data[, dev],
     origin1id = loss_data[, origin1id]

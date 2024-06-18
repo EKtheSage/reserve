@@ -3,8 +3,8 @@ data {
   int<lower=1> len_pred;
 
   array[len_data + len_pred] int<lower=0, upper=1> origin1id;
-  array[len_data + len_pred] real logprem;
-  array[len_data] real logloss;
+  array[len_data + len_pred] real prem;
+  array[len_data] real loss;
   array[len_data + len_pred] int<lower=1> origin;
   array[len_data + len_pred] int<lower=1> dev;
 }
@@ -19,7 +19,7 @@ parameters {
   real log_elr;
   array[n_dev] real<lower=0, upper=100000> a_ig;
   real<lower=0, upper=1> r_rho;
-  array[len_pred] real logloss_pred;
+  array[len_pred] real loss_pred;
 }
 transformed parameters {
   array[n_origin] real alpha;
@@ -52,21 +52,21 @@ transformed parameters {
    sig[i] = sqrt(sig2[i]);
   }
 
-  mu[1] = logprem[1] + log_elr + beta[dev[1]];
+  mu[1] = prem[1] + log_elr + beta[dev[1]];
 
   for (i in 2:len_data) {
-   mu[i] = logprem[i] + log_elr + alpha[origin[i]] + beta[dev[i]] + 
-    rho*(logloss[i-1] - mu[i-1]) * origin1id[i];
+   mu[i] = prem[i] + log_elr + alpha[origin[i]] + beta[dev[i]] + 
+    rho*(loss[i-1] - mu[i-1]) * origin1id[i];
   }
 
-  mu_pred[1] = logprem[(len_data) + 1] + alpha[origin[len_data + 1]] + 
+  mu_pred[1] = prem[(len_data) + 1] + alpha[origin[len_data + 1]] + 
    log_elr + beta[dev[len_data + 1]] + 
-   rho*(logloss[len_data] - mu[len_data]) * origin1id[len_data + 1];
+   rho*(loss[len_data] - mu[len_data]) * origin1id[len_data + 1];
 
   for (i in 2:len_pred) {
-    mu_pred[i] = logprem[len_data + i] + alpha[origin[len_data + i]] + 
+    mu_pred[i] = prem[len_data + i] + alpha[origin[len_data + i]] + 
      log_elr + beta[dev[len_data + i]] +
-     rho*(logloss_pred[i-1] - mu_pred[i-1]) * origin1id[len_data + i];
+     rho*(loss_pred[i-1] - mu_pred[i-1]) * origin1id[len_data + i];
   }
 }
 model {
@@ -77,11 +77,11 @@ model {
   r_rho ~ beta(2, 2);
 
   for (i in  1:(len_data)) {
-    logloss[i] ~ normal(mu[i], sig[dev[i]]);
+    loss[i] ~ normal(mu[i], sig[dev[i]]);
   }
 
   for (i in 1:(len_pred)) {
-    logloss_pred[i] ~ normal(mu_pred[i], sig[dev[len_data + i]]);
+    loss_pred[i] ~ normal(mu_pred[i], sig[dev[len_data + i]]);
   }
 }
 generated quantities {
@@ -89,7 +89,7 @@ generated quantities {
   vector[len_total] ppc_loss;
 
   for (i in 1:len_data) {
-   log_lik[i] = normal_lpdf(logloss[i] | mu[i], sig[dev[i]]);
+   log_lik[i] = normal_lpdf(loss[i] | mu[i], sig[dev[i]]);
   }
 
   for (i in 1:len_data) {
