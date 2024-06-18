@@ -29,6 +29,10 @@
 				"r.rpath.linux": "/opt/conda/envs/reserve/bin/R",
 				"r.bracketedPaste": true,
 				"r.plot.useHttpgd": true,
+				"r.useRenvLibPath": true,
+				"r.libPaths": [
+					"/workspaces/reserve/renv/library/R-4.3/x86_64-conda-linux-gnu"
+				],
 				"r.rterm.option": [
 					"--no-save",
 					"--no-restore",
@@ -48,8 +52,8 @@
 				"christian-kohler.path-intellisense"
 			]
 		}
-	}
-
+	},
+	"postCreateCommand": "bash ./.devcontainer/postCreateCommand.sh"
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 
