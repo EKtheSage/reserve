@@ -1,11 +1,15 @@
 library(data.table)
 library(ggplot2)
+library(brms)
 library(cmdstanr)
 library(posterior)
 library(loo)
 library(bayesplot)
 library(showtext)
+
 set_cmdstan_path('/opt/conda/envs/reserve/bin/cmdstan/')
+options(mc.cores = 4)
+options(cmdstanr_write_stan_file_dir = paste0(getwd(), '/scripts'))
 
 font_add_google('Nunito', 'nunito')
 font_add_google('Inter', 'inter')
