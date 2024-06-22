@@ -31,7 +31,7 @@
 				"r.plot.useHttpgd": true,
 				"r.useRenvLibPath": true,
 				"r.libPaths": [
-					"/workspaces/reserve/renv/library/R-4.3/x86_64-conda-linux-gnu"
+					"/workspaces/reserve/lib/vscode-R/renv/library/R-4.3/x86_64-conda-linux-gnu"
 				],
 				"r.rterm.option": [
 					"--no-save",
@@ -49,7 +49,8 @@
 				"mechatroner.rainbow-csv",
 				"ms-vscode.live-server",
 				"yellpika.latex-input",
-				"christian-kohler.path-intellisense"
+				"christian-kohler.path-intellisense",
+				"corker.vscode-micromamba"
 			]
 		}
 	},
