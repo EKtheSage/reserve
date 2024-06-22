@@ -12,8 +12,6 @@ setnames(
 
 loss_data <- create_loss_data(cas_data, company_code = 353, loss_type = 'incurred')
 
-loss_data[, 'split' := ifelse(is.na(loss_train), 'test', 'train')]
-
 mod <- cmdstan_model('./scripts/ccl.stan')
 
 stan_data <- create_stan_data(loss_data)

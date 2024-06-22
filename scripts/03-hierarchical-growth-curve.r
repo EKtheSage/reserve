@@ -12,8 +12,6 @@ setnames(
 
 loss_data <- create_loss_data(cas_data, company_code = 353, loss_type = 'paid')
 
-loss_data[, 'split' := ifelse(is.na(loss_train), 'test', 'train')]
-
 fit <- brm(
   bf(
     paid_loss ~ ult * (1 - exp(-(dev/theta)^omega)),

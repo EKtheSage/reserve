@@ -52,7 +52,14 @@ create_loss_data <- function(cas_data, company_code, loss_type = 'incurred') {
       comp_data[cal > max(origin)]
     )
   )
-  return(train_test)
+  
+  train_test[, 'split' := ifelse(is.na(loss_train), 'test', 'train')]
+  train_test[
+    , 'incr_loss' := pmax(1e-6, loss - shift(loss, fill = 0)) # needs to be gt 0
+    , by = accident_year
+  ]
+  train_test[, 'incr_lr' := incr_loss / premium]
+  return(train_test[])
 }
 
 create_stan_data <- function(loss_data, log_amt = TRUE) {
