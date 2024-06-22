@@ -10,9 +10,10 @@ dependencies:
   - cmdstan
   - cmdstanpy[all]
   - jupyterlab
+  - cmake
+  - pkg-config
   - radian
   - r-base
-  - r-essentials
   - r-renv
   # - r-languageserver
   # - r-httpgd
