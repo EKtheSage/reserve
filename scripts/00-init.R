@@ -1,3 +1,4 @@
+library(curl)
 library(data.table)
 library(ggplot2)
 library(brms)
