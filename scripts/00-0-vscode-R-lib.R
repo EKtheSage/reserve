@@ -1,5 +1,5 @@
 # VSCode-R library cache dir
-Sys.setenv('RENV_PATHS_CACHE' = '/workspaces/reserve/.cache/R/vscode-R/v5/R-4.3/x86_64-conda-linux-gnu')
+Sys.setenv('RENV_PATHS_CACHE' = '/workspaces/reserve/.cache/R/vscode-R')
 options(
   repos = c(
     CRAN = 'https://packagemanager.posit.co/cran/__linux__/bookworm/latest'
