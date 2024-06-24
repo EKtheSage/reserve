@@ -1,3 +1,10 @@
+Sys.setenv(
+  RENV_PATHS_CACHE=paste0(
+    getwd(),
+    '/.cache/R/renv/'
+  )
+)
+
 source("renv/activate.R")
 
 if (interactive() && Sys.getenv("TERM_PROGRAM") == "vscode") {
