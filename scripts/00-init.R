@@ -23,6 +23,15 @@ theme_set(
 
 create_loss_data <- function(cas_data, company_code, loss_type = 'incurred') {
 
+  setnames(
+    cas_data,
+    c('EarnedPremNet_C', 'AccidentYear', 'DevelopmentLag',
+      'IncurLoss_C', 'CumPaidLoss_C', 'BulkLoss_C'),
+    c('premium', 'accident_year', 'dev',
+      'incurred_loss', 'paid_loss', 'bulk_loss')
+  )
+
+
   comp_data <- cas_data[
     GRCODE == company_code,  # nolint: object_usage_linter.
     c('premium', 'accident_year', 'dev', 'incurred_loss', 'paid_loss', 'bulk_loss')

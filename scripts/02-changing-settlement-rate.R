@@ -2,14 +2,6 @@ if (!exists('create_loss_data', mode = 'function')) source('./scripts/00-init.R'
 
 cas_data <- fread('https://www.casact.org/sites/default/files/2021-04/comauto_pos.csv') # nolint: quotes_linter.
 
-setnames(
-  cas_data,
-  c('EarnedPremNet_C', 'AccidentYear', 'DevelopmentLag', 
-    'IncurLoss_C', 'CumPaidLoss_C', 'BulkLoss_C'),
-  c('premium', 'accident_year', 'dev',
-    'incurred_loss', 'paid_loss', 'bulk_loss')
-)
-
 loss_data <- create_loss_data(cas_data, company_code = 353, loss_type = 'paid')
 
 mod <- cmdstan_model('./scripts/csr.stan')
