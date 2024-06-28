@@ -42,6 +42,8 @@ create_loss_data <- function(cas_data, company_code, loss_type = 'incurred') {
     # origin period starting from 1, id to identify first origin period
     origin1id = ifelse(accident_year == min(accident_year), 0,  1))]
 
+  comp_data[, cal_year := accident_year + dev - 1]
+
   # set losses < 0 to 1, as we will take the log later
   if (loss_type %in% "incurred") {
     comp_data[, loss := pmax(incurred_loss - bulk_loss, 1)]
@@ -62,13 +64,18 @@ create_loss_data <- function(cas_data, company_code, loss_type = 'incurred') {
       comp_data[cal > max(origin)]
     )
   )
-  
+
   train_test[, 'split' := ifelse(is.na(loss_train), 'test', 'train')]
   train_test[
     , 'incr_loss' := pmax(1e-6, loss - shift(loss, fill = 0)) # needs to be gt 0
     , by = accident_year
   ]
   train_test[, 'incr_lr' := incr_loss / premium]
+  train_test[, 'paid_loss_ratio' := paid_loss / premium]
+  train_test[, 'os_loss' := incurred_loss - paid_loss]
+  train_test[, 'os_loss_ratio' := (incurred_loss - paid_loss) / premium]
+  train_test[, 'incr_paid_loss_ratio' := incr_lr]
+
   return(train_test[])
 }
 
