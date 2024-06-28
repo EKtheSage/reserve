@@ -30,6 +30,19 @@ setnames(
 loss_data <- create_loss_data(cas_data, company_code = 353, loss_type = 'paid')
 
 
+library(ChainLadder)
+data(GenIns)
+
+loss_data <- data.table(
+  accident_year = rep(1991:2000, 10),
+  dev = sort(rep(1:10, 10)),
+  premium = rep(10000000+400000*0:9, 10),
+  cum_loss = as.vector(GenIns),
+  incr_loss = as.vector(cum2incr(GenIns))
+)[order(accident_year, dev),
+  `:=`(cum_lr = cum_loss/premium,
+       incr_lr = incr_loss/premium)]
+
 myFuns <- '
 vector compartmentmodel(real t, vector y, vector theta) {
   vector[3] dydt;
@@ -92,22 +105,22 @@ mypriors <- c(
   prior(normal(0, 1), nlpar = 'odr'),
   prior(normal(0, 1), nlpar = 'okp1'),
   prior(normal(0, 1), nlpar = 'okp2'),
-  prior(student_t(10, 0, 0.1), class = 'sd', nlpar = 'ELR'),
-  prior(student_t(10, 0, 0.1), class = 'sd', nlpar = 'oke'),
-  prior(student_t(10, 0, 0.1), class = 'sd', nlpar = 'odr'),
-  prior(student_t(10, 0, 0.1), class = 'sd', nlpar = 'okp1'),
-  prior(student_t(10, 0, 0.1), class = 'sd', nlpar = 'okp2'),
+  prior(student_t(10, 0, 1), class = 'sd', nlpar = 'ELR'),
+  prior(student_t(10, 0, 1), class = 'sd', nlpar = 'oke'),
+  prior(student_t(10, 0, 1), class = 'sd', nlpar = 'odr'),
+  prior(student_t(10, 0, 1), class = 'sd', nlpar = 'okp1'),
+  prior(student_t(10, 0, 1), class = 'sd', nlpar = 'okp2'),
   #class = sigma for lognormal family to account for residual sd
   prior(student_t(10, 0, 1), class = 'sigma') 
 )
 
 fit <- brm(
   frml,
-  data = loss_data, family = lognormal(),
+  data = loss_data, family = lognormal(), 
   prior = mypriors,
   stanvars = stanvar(scode = myFuns, block = 'functions'),
   backend = 'cmdstan',
-  file = 'hierarchical-compartmental-model',
+  file = 'hierarchical-compartmental-model-wide-prior',
   file_refit = 'on_change',
   control = list(adapt_delta = 0.99)
 )
