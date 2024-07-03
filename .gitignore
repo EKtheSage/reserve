@@ -3,3 +3,7 @@
 model_*
 *.xlsx
 *.csv
+*.o
+*.cpp
+*.cpp.R
+*.so
