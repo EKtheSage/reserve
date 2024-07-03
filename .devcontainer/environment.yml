@@ -7,6 +7,9 @@ dependencies:
   - pandas
   - matplotlib
   - arviz
+  - scikit-learn
+  - torch
+  - polars
   - cmdstan
   - cmdstanpy[all]
   - jupyterlab
@@ -24,4 +27,3 @@ dependencies:
   # - r-shinystan
   # - r-showtext
   # - r-showtextdb
-
