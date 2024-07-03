@@ -1,0 +1,285 @@
+---
+title: 'Reserve Summary'
+format:
+  html:
+    code-fold: true
+    toc: true
+---
+
+```{r}
+library(readxl)
+library(data.table)
+library(lubridate)
+library(here)
+library(ggplot2)
+
+here::i_am('./scripts/reserves.qmd')
+```
+
+# Claims
+
+- We want to analyze Attritional claims only
+- Still would be good to see the LR breakdown by attritional/cat/large
+- Analyze Property and Liabilty to start
+- Quarterly at 1/31, 4/30, 7/31, 10/31, data is on a two-month lag.
+- Not every reporting month available for each UW month (no claims activity)
+- Need to populate the entire reporting month
+- We also need to think about updating the analysis quarterly, if we add one more quarter, how many more dev can we add?
+```{r}
+claims <- read_excel(
+  here('data', 'Claims Mapped Amounts - 31012024.xlsx')
+)
+
+setDT(claims)
+setnames(claims, names(janitor::clean_names(claims)))
+
+CURRENT_REPORTING_PERIOD <- ymd('2024-01-31')
+STARTING_UW_MONTH_US <- ymd('2021-04-30')
+STARTING_UW_MONTH_EU <- ymd('2020-01-31')
+
+NUM_DEV_US <- interval(
+  STARTING_UW_MONTH_US, # earliest US UW month with sufficient data
+  CURRENT_REPORTING_PERIOD
+) %/% months(1)
+
+NUM_DEV_EU <- interval(
+  STARTING_UW_MONTH_EU, # earliest EU UW month with sufficient data
+  CURRENT_REPORTING_PERIOD
+) %/% months(1)
+
+# use rollforward to move to the last day of the month
+date_df <- rbindlist(
+  list(
+    CJ(
+      res_q_level_1 = 'US',
+      res_q_level_4 = c('Liability', 'Motor', 'Property'),
+      data_type2 = c('paid', 'os'),
+      uwm = rollforward(STARTING_UW_MONTH_US %m+% months(0:NUM_DEV_US)),
+      reporting_month = rollforward(STARTING_UW_MONTH_US %m+% months(0:NUM_DEV_US))
+    ),
+    CJ(
+      res_q_level_1 = 'Europe',
+      res_q_level_4 = c('Liability', 'Motor', 'Property'),
+      data_type2 = c('paid', 'os'),
+      uwm = rollforward(STARTING_UW_MONTH_EU %m+% months(0:NUM_DEV_EU)),
+      reporting_month = rollforward(STARTING_UW_MONTH_EU %m+% months(0:NUM_DEV_EU))
+    )
+  )
+)
+
+date_df <- date_df[uwm <= reporting_month]
+date_df[, uwq := quarter(uwm, type = 'year.quarter')]
+date_df[, uwq2 := rollforward(quarter(uwm, type = 'date_first'))]
+
+claims[, uwm := rollforward(
+  ymd(paste(inception_year, inception_month, 1, sep = '-')))]
+claims[, uwq := quarter(uwm, type = 'year.quarter')]
+claims[, uwq2 := rollforward(quarter(uwm, type = 'date_first'))]
+claims[, reporting_month := ymd(reporting_month)]
+claims[, data_type2 := ifelse(data_type %like% 'Paid', 'paid', 'os')]
+
+
+df <- claims[
+  , .(amount = sum(total_usd))
+  , by = .(
+    uwm, uwq, uwq2, reporting_month, data_type2,
+    res_q_level_1, res_q_level_4
+  )
+]
+
+df <- df[
+  date_df, 
+  on = c(
+    'res_q_level_1', 'res_q_level_4', 'data_type2', 
+    'uwm', 'uwq', 'uwq2', 'reporting_month')]
+
+df <- df[
+  , {
+    amount = fcoalesce(amount, 0)
+    .(
+    uwq, uwq2, reporting_month, amount,
+    cum_amount = round(cumsum(amount), 2)
+  )}, by = .(uwm, data_type2, res_q_level_1, res_q_level_4)
+]
+
+df[, dev_m := interval(uwm, reporting_month) %/% months(1) + 1]
+df[, dev_q := interval(uwq2, reporting_month) %/% months(1) + 1]
+
+setcolorder(
+  df, 
+  c(
+    'uwm', 'uwq', 'uwq2', 'reporting_month', 'dev_m', 'dev_q',
+    'res_q_level_1', 'res_q_level_4'
+  )
+)
+
+```
+
+## Sanity Check
+
+### US 
+
+Matching to: AvE - US - January 2024 Data - 6 Months View.xlsx, Property Tab
+2021.1 and prior not close.
+
+```{r}
+df[
+  , .(amount = sum(amount), cum_amount = sum(cum_amount))
+  , by = .(uwq, uwq2, reporting_month, dev_q, res_q_level_1, res_q_level_4)][
+    res_q_level_1 == 'US' & res_q_level_4 == 'Property' & 
+    reporting_month == '2023-07-31']
+
+```
+
+```{r}
+df[
+  , .(amount = sum(amount), cum_amount = sum(cum_amount))
+  , by = .(
+    uwq, reporting_month, dev_q, res_q_level_1, 
+    res_q_level_4, data_type2)][
+    res_q_level_1 == 'US' & res_q_level_4 == 'Property'] |>
+ggplot(aes(dev_q, cum_amount, color = data_type2, group = data_type2)) +
+  geom_point() +
+  geom_line() +
+  scale_y_continuous(labels = scales::label_comma()) +
+  facet_wrap(~ uwq, scales = 'free_y')
+```
+
+```{r}
+df[
+  uwq == 2021.4 & data_type2 == 'paid' &
+  res_q_level_1 == 'US' & res_q_level_4 == 'Property' 
+  , .(amount = sum(amount), cum_amount = sum(cum_amount))
+  , by = .(uwq, uwq2, reporting_month, dev_q, res_q_level_1, res_q_level_4)
+]
+```
+
+### EU
+
+Matching to: AvE - Europe - January 2024 Data - 6 Months View.xlsx, Property Tab
+2019.4 and prior not close.
+```{r}
+df[res_q_level_1 == 'Europe' & res_q_level_4 == 'Property'
+  , .(amount = sum(amount), cum_amount = sum(cum_amount))
+  , by = .(uwq, uwq2, reporting_month, dev_q, res_q_level_1, res_q_level_4)][
+  reporting_month == '2023-07-31'
+  , .(amount = scales::label_comma()(sum(cum_amount)/1000))
+  , by = .(uwq)
+]
+```
+
+```{r}
+df[
+  , .(amount = sum(amount), cum_amount = sum(cum_amount))
+  , by = .(
+    uwq, reporting_month, dev_q, res_q_level_1, 
+    res_q_level_4, data_type2)][
+    res_q_level_1 == 'Europe' & res_q_level_4 == 'Property'] |>
+ggplot(aes(dev_q, cum_amount, color = data_type2, group = data_type2)) +
+  geom_point() +
+  geom_line() +
+  scale_y_continuous(labels = scales::label_comma()) +
+  facet_wrap(~ uwq, scales = 'free_y')
+```
+
+# Premium
+
+- UWQ 2024.1 only has 1 month in the quarter.
+- EU Property UWQ 2023.3 and 2023.4 less by ~ 10M, 30M
+- US Property UWQ 2023.3 and 2023.4 less by ~ 27M, 18M
+- US Liability UWQ 2023.3 less by ~ 10M
+```{r}
+prem <- read_excel(
+  here('data', 'Premiums Mapped - 31012024.xlsx')
+)
+
+setDT(prem)
+setnames(prem, names(janitor::clean_names(prem)))
+
+prem[, uwm := rollforward(
+  ymd(paste(inception_year, inception_month, 1, sep = '-')))]
+prem[, uwq := quarter(uwm, type = 'year.quarter')]
+prem[, uwq2 := rollforward(quarter(uwm, type = 'date_first'))]
+prem[, reporting_month := rollforward(ymd(reporting_month))]
+
+
+df2 <- prem[
+  , {total_usd = fcoalesce(total_usd, 0)
+   .(amount = sum(total_usd))}
+  , by = .(
+    uwq, uwq2, reporting_month, 
+    res_q_level_1, res_q_level_4)]
+
+df2 <- df2[order(uwq, res_q_level_1, res_q_level_4, reporting_month)][
+  , .(uwq, uwq2, res_q_level_1, res_q_level_4,reporting_month, amount)]
+  
+df2 <- df2[unique(date_df[, -c('uwm', 'data_type2')])
+  , on = c(
+    'uwq', 'uwq2', 'reporting_month',
+    'res_q_level_1', 'res_q_level_4'
+  )]
+
+df2[, amount := fcoalesce(amount, 0)]
+df2[
+  , cum_amount := cumsum(amount)
+  , by = .(uwq, uwq2, res_q_level_1, res_q_level_4)
+]
+
+# sanity check - 2024.1 only has 1 month, incomplete quarter
+df2[reporting_month == '2023-07-31' & res_q_level_4 %in% c('Property', 'Liability') &
+  res_q_level_1 %in% c('US', 'Europe')
+  , .(uwq, res_q_level_1, res_q_level_4, cum_amount)][order(
+    res_q_level_1, res_q_level_4, uwq
+  )]
+```
+
+# Combine
+
+```{r}
+df3 <- dcast(
+  df[
+  , .(amount = sum(amount), cum_amount = sum(cum_amount))
+  , by = .(
+    uwq, uwq2, reporting_month, dev_q, res_q_level_1, 
+    res_q_level_4, data_type2)]
+  , uwq + uwq2 + reporting_month + dev_q + res_q_level_1 + res_q_level_4 ~ data_type2
+  , value.var = c('amount', 'cum_amount')
+)
+
+df3[, amount_os := NULL]
+
+df3 <- df2[
+  df3,
+  on = c('uwq', 'uwq2', 'res_q_level_1', 'res_q_level_4', 'reporting_month')
+]
+
+df3[, amount := NULL]
+setnames(df3, old = 'cum_amount', new = 'premium')
+
+df3[, os_loss_ratio := cum_amount_os / premium]
+df3[, incr_paid_loss_ratio := amount_paid / premium]
+df3[, cum_paid_loss_ratio := cum_amount_paid / premium]
+df3[, amount_incr_incurred := amount_paid + cum_amount_os]
+df3[, cum_amount_incurred := cum_amount_paid + cum_amount_os]
+df3[, incr_incurred_loss_ratio := amount_incr_incurred / premium]
+df3[, cum_incurred_loss_ratio := cum_amount_incurred / premium]
+
+# fwrite(df3, './data/us-eu-prop-liab-motor.csv')
+df3[res_q_level_1 == 'Europe' & res_q_level_4 == 'Property'] |>
+  ggplot(aes(dev_q, incr_paid_loss_ratio)) +
+  geom_point() + 
+  geom_line(color = 'orange') +
+  geom_line(aes(dev_q, os_loss_ratio), color = 'blue') +
+  scale_y_continuous(labels = scales::percent_format()) +
+  facet_wrap(~ uwq)
+
+
+df3[res_q_level_1 == 'Europe' & res_q_level_4 == 'Liability'] |>
+  ggplot(aes(dev_q, cum_incurred_loss_ratio)) +
+  geom_point() + 
+  geom_line(color = 'orange') +
+  geom_line(aes(dev_q, cum_paid_loss_ratio), color = 'blue') +
+  scale_y_continuous(labels = scales::percent_format()) +
+  facet_wrap(~ uwq)
+```
+
